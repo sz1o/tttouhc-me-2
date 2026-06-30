@@ -100,11 +100,52 @@
             color: #999;
             z-index: 50;
         }
+
+        #floating-box {
+            position: fixed;
+            width: 300px;
+            height: 200px;
+            background: linear-gradient(45deg, #FF0000, #00FF00, #0000FF, #FFFF00);
+            border: 3px solid #000;
+            border-radius: 10px;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
+            font-family: Arial, sans-serif;
+            cursor: move;
+        }
+
+        #floating-box h1 {
+            font-size: 2rem;
+            margin: 0;
+            animation: flash-text 0.1s infinite;
+        }
+
+        #floating-box p {
+            margin: 10px 0 0 0;
+            font-size: 1.2rem;
+        }
+
+        @keyframes flash-text {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
     </style>
 </head>
 <body>
     <div id="background"></div>
     <div id="emoji-container"></div>
+    
+    <div id="floating-box">
+        <h1>⚠️ ALERT ⚠️</h1>
+        <p>Can't escape me!</p>
+    </div>
     
     <div id="loading-container">
         <div class="apple-logo">🍎</div>
@@ -127,64 +168,15 @@
 
         // Create floating bouncing window
         function createFloatingWindow() {
-            const popupContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Alert</title>
-                    <style>
-                        * { margin: 0; padding: 0; }
-                        body {
-                            background: linear-gradient(45deg, #FF0000, #00FF00, #0000FF);
-                            font-family: Arial;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            height: 100vh;
-                            overflow: hidden;
-                        }
-                        .content {
-                            text-align: center;
-                            color: white;
-                            font-weight: bold;
-                            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-                        }
-                        h1 { font-size: 2rem; animation: flash 0.1s infinite; }
-                        @keyframes flash {
-                            0%, 100% { opacity: 1; }
-                            50% { opacity: 0.5; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="content">
-                        <h1>⚠️ ALERT ⚠️</h1>
-                        <p>Can't close me!</p>
-                    </div>
-                    <script>
-                        window.addEventListener('beforeunload', (e) => {
-                            e.preventDefault();
-                            return '';
-                        });
-                        setTimeout(() => {
-                            if (window.opener && window.opener.recreateFloatingWindow) {
-                                window.close();
-                            }
-                        }, 500);
-                    </script>
-                </body>
-                </html>
-            `;
-            
-            const blob = new Blob([popupContent], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            floatingWindow = window.open(url, 'floatingAlert', 
-                `width=${WINDOW_WIDTH},height=${WINDOW_HEIGHT},left=${windowX},top=${windowY},resizable=no`);
+            const box = document.getElementById('floating-box');
+            box.style.display = 'flex';
         }
 
         // Bounce the floating window around
         function bounceWindow() {
-            if (!floatingWindow || floatingWindow.closed) {
+            const box = document.getElementById('floating-box');
+            
+            if (box.style.display === 'none') {
                 if (isRunning) {
                     createFloatingWindow();
                 }
@@ -202,12 +194,12 @@
                 windowVY *= -1;
             }
 
-            try {
-                floatingWindow.moveTo(windowX, windowY);
-            } catch (e) {
-                // Silently fail if window is closed
-            }
+            box.style.left = windowX + 'px';
+            box.style.top = windowY + 'px';
         }
+
+        // Update background grid
+        function updateBackgroundGrid() {
             const bg = document.getElementById('background');
             bg.innerHTML = '';
             bg.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
@@ -323,10 +315,9 @@
             if (e.key.toLowerCase() === 'p') {
                 isRunning = false;
                 
-                // Close floating window
-                if (floatingWindow && !floatingWindow.closed) {
-                    floatingWindow.close();
-                }
+                // Hide floating box
+                const box = document.getElementById('floating-box');
+                box.style.display = 'none';
                 
                 // Exit fullscreen if active
                 if (isFullscreen) {
@@ -388,6 +379,7 @@
 
         // Also initialize immediately
         updateBackgroundGrid();
+        createFloatingWindow();
     </script>
 </body>
 </html>
